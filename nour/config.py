@@ -13,7 +13,9 @@ DEFAUT = {
     "debit_mac": 165,              # mots par minute ; plus bas = plus posé (narrateur)
     "depot_maj": "B2RM/nour",      # dépôt GitHub de Nour (mises à jour auto)
     "cerveau": "local",            # "local" (Ollama, 0 €) ou "claude" (payant, clé à ton nom)
-    "modele_local": "qwen2.5:7b",
+    "modele_local": "qwen2.5:7b",  # plus rapide mais moins bon : "qwen2.5:3b"
+    "modele_oreille": "base",      # "base" = rapide ; "small" = plus précis mais plus lent
+    "interface": True,             # ouvre le bel écran de Nour dans le navigateur
     "modele_claude": "claude-haiku-5-5",
     "sites": {
         "mail": "https://mail.google.com",

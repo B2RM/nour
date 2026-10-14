@@ -4,7 +4,7 @@ ORDRE = 20
 DESCRIPTION = "noter ce que tu me dis, te le relire, ou vider ton carnet"
 _EFFACER = re.compile(r"(efface|vide) (?:mon |le )?carnet")
 _RELIRE = re.compile(r"(qu'est-ce que j'ai note|mes notes|relis (?:mes|le) (?:notes|carnet)|mes taches)")
-_NOTER = re.compile(r"^(?:note|notes|ecris|retiens) (?:que |qu')?(.+)")
+_NOTER = re.compile(r"^(?:note|notes|retiens) (?:que |qu')?(.+)")
 MOTIF = re.compile("|".join(f"(?:{p.pattern})" for p in (_EFFACER, _RELIRE, _NOTER)))
 
 

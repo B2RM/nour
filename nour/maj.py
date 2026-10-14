@@ -16,7 +16,7 @@ A_REMPLACER = ["nour", "tests", "requirements.txt", "README.md", "installer-mac.
 
 def verifier(depot: str, ici: Path = ICI, get=requests.get) -> str | None:
     """Renvoie un message si une mise à jour a été installée, None sinon. Ne plante jamais."""
-    if not depot:
+    if not depot or (ici / ".git").exists():   # pas de mise à jour dans une copie de développement
         return None
     try:
         r = get(f"https://api.github.com/repos/{depot}/commits/main", timeout=8,

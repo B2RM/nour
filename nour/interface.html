@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{NOM}}</title>
+<style>
+  :root {
+    --nuit: #070b16; --nuit-2: #0d1426; --verre: rgba(255,255,255,.045); --bord: rgba(255,255,255,.09);
+    --texte: #eef1f8; --doux: #9aa3b8; --or: #f4c56a; --or-2: #ffb347; --ciel: #6fd3ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    background: radial-gradient(1200px 800px at 30% 20%, #142042 0%, var(--nuit-2) 45%, var(--nuit) 100%);
+    color: var(--texte); overflow: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .5;
+    background-image: radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%),
+      radial-gradient(1px 1px at 72% 12%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 85% 64%, #fff 50%, transparent 51%),
+      radial-gradient(1px 1px at 24% 78%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 52% 40%, #cfe 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 40% 8%, #ffe 50%, transparent 51%), radial-gradient(1px 1px at 92% 30%, #fff 50%, transparent 51%);
+  }
+  .app { display: grid; grid-template-columns: 1.2fr 1fr; height: 100%; }
+  header { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 32px; z-index: 5; }
+  .marque { font-size: 15px; letter-spacing: .32em; text-transform: uppercase; color: var(--doux); }
+  .marque b { color: var(--or); font-weight: 600; }
+  .outils { display: flex; gap: 8px; }
+  .outils button, .envoyer {
+    background: var(--verre); border: 1px solid var(--bord); color: var(--texte); border-radius: 999px;
+    padding: 8px 16px; font: inherit; font-size: 13px; cursor: pointer; transition: .2s; backdrop-filter: blur(10px);
+  }
+  .outils button:hover { border-color: rgba(244,197,106,.5); color: var(--or); }
+
+  .scene { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; padding-top: 40px; }
+  .orbe-zone { position: relative; width: 340px; height: 340px; display: grid; place-items: center; }
+  .halo { position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle, rgba(244,197,106,.28) 0%, rgba(255,179,71,.08) 45%, transparent 70%);
+    filter: blur(8px); transition: transform .5s, opacity .5s; }
+  .orbe { position: relative; width: 190px; height: 190px; border-radius: 50%; transition: transform .12s ease-out;
+    background: radial-gradient(circle at 35% 30%, #fff8e6 0%, var(--or) 30%, #e0892b 65%, #7a3a12 100%);
+    box-shadow: 0 0 60px rgba(244,197,106,.55), 0 0 140px rgba(255,150,60,.25), inset -18px -24px 50px rgba(90,30,5,.55); }
+  .orbe::after { content: ""; position: absolute; inset: 0; border-radius: 50%; opacity: 0; transition: opacity .4s;
+    background: conic-gradient(from 0deg, transparent 0 60%, rgba(255,255,255,.55) 75%, transparent 90%);
+    mix-blend-mode: overlay; }
+  .anneau { position: absolute; width: 190px; height: 190px; border-radius: 50%; border: 1.5px solid var(--ciel); opacity: 0; }
+  .etat-veille .orbe { animation: respire 5s ease-in-out infinite; filter: saturate(.75) brightness(.85); }
+  .etat-veille .halo { opacity: .55; }
+  .etat-ecoute .orbe { filter: brightness(1.05); }
+  .etat-ecoute .anneau { animation: onde 2.2s ease-out infinite; }
+  .etat-ecoute .anneau:nth-child(4) { animation-delay: .73s; }
+  .etat-ecoute .anneau:nth-child(5) { animation-delay: 1.46s; }
+  .etat-reflechit .orbe::after { opacity: 1; animation: tourne 1.6s linear infinite; }
+  .etat-reflechit .halo { animation: respire 1.6s ease-in-out infinite; }
+  .etat-parle .halo { transform: scale(1.12); }
+  @keyframes respire { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  @keyframes onde { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(1.75); opacity: 0; } }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+  .statut { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; color: var(--doux); min-height: 18px; }
+  .phrase { max-width: 520px; text-align: center; font-size: 22px; line-height: 1.45; font-weight: 300; min-height: 64px;
+    color: #f7f1e3; padding: 0 24px; }
+  .astuce { font-size: 13px; color: var(--doux); }
+  .astuce b { color: var(--or); font-weight: 500; }
+
+  .panneau { display: flex; flex-direction: column; padding: 90px 32px 28px 0; min-height: 0; }
+  .fil { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 4px 6px 12px;
+    mask-image: linear-gradient(to bottom, transparent 0, #000 40px); }
+  .bulle { max-width: 86%; padding: 11px 15px; border-radius: 18px; font-size: 15px; line-height: 1.45;
+    animation: entre .25s ease-out; white-space: pre-wrap; }
+  .bulle.toi { align-self: flex-end; background: rgba(111,211,255,.13); border: 1px solid rgba(111,211,255,.22);
+    border-bottom-right-radius: 6px; }
+  .bulle.nour { align-self: flex-start; background: var(--verre); border: 1px solid var(--bord); border-bottom-left-radius: 6px; }
+  .trace { align-self: center; font-size: 12px; color: var(--doux); letter-spacing: .04em; opacity: .85;
+    animation: entre .25s ease-out; }
+  .trace::before { content: "◆ "; color: var(--or); font-size: 9px; }
+  .bulle .qui { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--doux); margin-bottom: 3px; }
+  .bulle.nour .qui { color: var(--or); }
+  @keyframes entre { from { opacity: 0; transform: translateY(6px); } }
+  form { display: flex; gap: 10px; margin-top: 10px; }
+  input { flex: 1; background: var(--verre); border: 1px solid var(--bord); border-radius: 999px; padding: 14px 20px;
+    color: var(--texte); font: inherit; font-size: 15px; outline: none; transition: .2s; }
+  input:focus { border-color: rgba(244,197,106,.55); box-shadow: 0 0 0 4px rgba(244,197,106,.1); }
+  .envoyer { padding: 0 22px; background: linear-gradient(135deg, var(--or), var(--or-2)); color: #2a1604; font-weight: 600; border: 0; }
+
+  .tiroir { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100%); background: rgba(10,15,30,.94);
+    border-left: 1px solid var(--bord); backdrop-filter: blur(16px); transform: translateX(100%); transition: transform .3s;
+    z-index: 10; padding: 28px; overflow-y: auto; }
+  .tiroir.ouvert { transform: none; }
+  .tiroir h2 { font-size: 18px; font-weight: 500; color: var(--or); margin-bottom: 6px; }
+  .tiroir p.sous { color: var(--doux); font-size: 13px; margin-bottom: 18px; line-height: 1.45; }
+  .tiroir li { list-style: none; padding: 12px 14px; border: 1px solid var(--bord); border-radius: 12px; margin-bottom: 8px;
+    font-size: 14px; line-height: 1.4; background: var(--verre); }
+  .tiroir li small { display: block; color: var(--doux); margin-top: 4px; }
+  .fermer { position: absolute; top: 20px; right: 22px; background: none; border: 0; color: var(--doux); font-size: 22px; cursor: pointer; }
+  .copier { margin: 4px 0 16px; padding: 10px 18px; }
+
+  @media (max-width: 860px) {
+    body { overflow: auto; }
+    .app { grid-template-columns: 1fr; height: auto; }
+    .orbe-zone { width: 260px; height: 260px; } .orbe, .anneau { width: 150px; height: 150px; }
+    .panneau { padding: 0 16px 20px; height: 60vh; }
+    header { position: static; padding: 16px; } .outils button { padding: 7px 11px; font-size: 12px; }
+    .sous-marque { display: none; } .scene { padding-top: 0; gap: 20px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="marque"><b>{{NOM}}</b><span class="sous-marque"> · assistant de Hilal</span></div>
+  <div class="outils">
+    <button data-vue="competences">Compétences</button>
+    <button data-vue="memoire">Mémoire</button>
+    <button data-vue="erreurs">Mes erreurs</button>
+  </div>
+</header>
+
+<div class="app">
+  <section class="scene etat-veille" id="scene">
+    <div class="orbe-zone">
+      <div class="halo"></div>
+      <div class="orbe" id="orbe"></div>
+      <div class="anneau"></div><div class="anneau"></div><div class="anneau"></div>
+    </div>
+    <div class="statut" id="statut">En veille</div>
+    <div class="phrase" id="phrase">Salam Hilal.</div>
+    <div class="astuce">Dis <b>« {{NOM}} »</b> puis ta demande, ou écris ci-contre.</div>
+  </section>
+
+  <section class="panneau">
+    <div class="fil" id="fil"></div>
+    <form id="form">
+      <input id="champ" autocomplete="off" placeholder="Écris à {{NOM}}…">
+      <button class="envoyer" type="submit">Envoyer</button>
+    </form>
+  </section>
+</div>
+
+<aside class="tiroir" id="tiroir">
+  <button class="fermer" id="fermer" aria-label="Fermer">×</button>
+  <div id="contenu"></div>
+</aside>
+
+<script>
+const NOM = "{{NOM}}";
+const scene = document.getElementById("scene"), statut = document.getElementById("statut"),
+      phrase = document.getElementById("phrase"), fil = document.getElementById("fil"), orbe = document.getElementById("orbe");
+const LIBELLES = { veille: "En veille", ecoute: "J'écoute", reflechit: "Je réfléchis", parle: "Je parle" };
+let animParle = null;
+
+function etat(e) {
+  scene.className = "scene etat-" + e;
+  statut.textContent = LIBELLES[e] || e;
+  clearInterval(animParle); orbe.style.transform = "";
+  if (e === "parle") animParle = setInterval(() => { orbe.style.transform = `scale(${1 + Math.random() * 0.09})`; }, 110);
+}
+
+function bulle(qui, texte) {
+  if (qui === "equipe") {
+    const t = document.createElement("div"); t.className = "trace"; t.textContent = texte;
+    fil.append(t); fil.scrollTop = fil.scrollHeight; return;
+  }
+  const b = document.createElement("div");
+  b.className = "bulle " + (qui === "toi" ? "toi" : "nour");
+  const q = document.createElement("span"); q.className = "qui"; q.textContent = qui === "toi" ? "Toi" : NOM;
+  b.append(q, document.createTextNode(texte));
+  fil.append(b); fil.scrollTop = fil.scrollHeight;
+  if (qui !== "toi") phrase.textContent = texte;
+}
+
+const flux = new EventSource("/events");
+flux.onmessage = (ev) => {
+  const d = JSON.parse(ev.data);
+  if (d.type === "etat") etat(d.etat);
+  if (d.type === "message") bulle(d.qui, d.texte);
+};
+flux.onerror = () => { statut.textContent = NOM + " est arrêté"; };
+
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const champ = document.getElementById("champ"), texte = champ.value.trim();
+  if (!texte) return;
+  champ.value = "";
+  await fetch("/demande", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texte }) });
+});
+
+const tiroir = document.getElementById("tiroir"), contenu = document.getElementById("contenu");
+document.getElementById("fermer").onclick = () => tiroir.classList.remove("ouvert");
+function li(texte, petit) {
+  const l = document.createElement("li"); l.textContent = texte;
+  if (petit) { const s = document.createElement("small"); s.textContent = petit; l.append(s); }
+  return l;
+}
+async function ouvrir(vue) {
+  const d = await (await fetch("/api/" + vue)).json();
+  contenu.innerHTML = "";
+  const h = document.createElement("h2"), p = document.createElement("p"), ul = document.createElement("ul");
+  p.className = "sous";
+  contenu.append(h, p);
+  if (vue === "competences") {
+    h.textContent = "Ce que je sais faire";
+    p.textContent = "Et répondre à toutes tes questions. Dis « " + NOM + " », puis par exemple :";
+    d.forEach(t => ul.append(li(t.charAt(0).toUpperCase() + t.slice(1))));
+  } else if (vue === "memoire") {
+    h.textContent = "Ce que je sais de toi";
+    p.textContent = "Ajoute : « souviens-toi que… ». Retire : « oublie… ». Tout reste sur ton Mac.";
+    if (!d.length) ul.append(li("Rien pour l'instant."));
+    d.slice().reverse().forEach(f => ul.append(li(f.fait, "depuis le " + f.depuis)));
+  } else {
+    h.textContent = "Mes erreurs";
+    p.textContent = "Quand je me trompe, dis « c'est faux ». Copie cette liste et envoie-la à Claude : il me corrige et je me mets à jour seul.";
+    if (d.length) {
+      const b = document.createElement("button"); b.className = "envoyer copier"; b.textContent = "Copier pour Claude";
+      b.onclick = async () => {
+        const t = "Erreurs de Nour à corriger :\n" + d.map(x => `- [${x.quand}] Demande : « ${x.demande} » / Réponse : « ${x.reponse} » / Remarque : ${x.pourquoi}`).join("\n");
+        await navigator.clipboard.writeText(t); b.textContent = "Copié ✓";
+      };
+      contenu.append(b);
+    } else ul.append(li("Aucune erreur notée."));
+    d.slice().reverse().forEach(x => ul.append(li("« " + x.demande + " »", x.quand + " · " + x.pourquoi)));
+  }
+  contenu.append(ul);
+  tiroir.classList.add("ouvert");
+}
+document.querySelectorAll("[data-vue]").forEach(b => b.onclick = () => ouvrir(b.dataset.vue));
+</script>
+</body>
+</html>
