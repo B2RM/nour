@@ -327,7 +327,7 @@ class CerveauEquipe:
 def _routeur_equipe(tmp_path, cerveau):
     rt = Routeur(config.charger(tmp_path), lambda t: None, cerveau=cerveau)
     traces = []
-    rt.suivi = traces.append
+    rt.suivi = lambda t: t.startswith("Bibliothèque") or traces.append(t)
     return rt, traces
 
 
@@ -386,3 +386,116 @@ def test_question_simple_ne_derange_pas_l_equipe(tmp_path):
     rt, _ = _routeur_equipe(tmp_path, c)
     assert rt.traiter("Tu aimes le thé ?") == "réponse directe"
     assert c.appels == []
+
+
+# --- v0.5 : bibliothèque, preuves, apprentissage quotidien ---
+
+def test_bibliotheque_trouve_le_bon_passage():
+    from nour.bibliotheque import ICI, Bibliotheque
+    b = Bibliotheque([ICI])
+    assert b.chercher("comment Bezos prend ses décisions")[0]["titre"].startswith("Jeff Bezos : décisions")
+    assert "2:275" in b.chercher("le riba est-il interdit", domaines=["religion"])[0]["texte"]
+    assert b.chercher("photosynthèse des plantes") == []
+
+
+def test_question_religion_va_au_manager_religion_avec_sources(tmp_path):
+    c = CerveauEquipe(avis=["OUI"], travaux=["Oui, le commerce est permis et l'intérêt interdit (Coran 2:275), "
+                                            "et ceux qui le pratiquent sont maudits (Muslim 1598)."])
+    vus = []
+    c.appeler_orig = c.appeler
+    c.appeler = lambda systeme, messages, **k: (vus.append(systeme), c.appeler_orig(systeme, messages, **k))[1]
+    rt, traces = _routeur_equipe(tmp_path, c)
+    rep = rt.traiter("Que dit l'islam sur le commerce, avec des preuves ?")
+    assert "Coran 2:275" in rep
+    assert traces[0] == "Directeur → Manager religion"
+    assert "SOURCES À UTILISER" in vus[0] and "Coran 2:275" in vus[0]
+
+
+def test_reference_inventee_refusee_gratuitement(tmp_path):
+    from nour.equipe import controle_gratuit, references
+    assert references("Selon Boukhari n° 2079 et la sourate 2 verset 275") == {"bukhari 2079", "coran 2:275"}
+    sources = "Coran 83:1-3 (sens)… Bukhari 2079 et Muslim 1532"
+    assert controle_gratuit("La fraude est condamnée (Coran 83:2) et la vente honnête bénie (Muslim 1532).", sources) is None
+    assert "absentes" in controle_gratuit("C'est rapporté par Bukhari 9999, un hadith très clair.", sources)
+    # le manager invente deux fois : Nour ne livre pas de fausse référence
+    c = CerveauEquipe(avis=[], travaux=["Le hadith Bukhari 9999 le prouve clairement, sans aucun doute.",
+                                        "Le hadith Muslim 8888 le prouve aussi, sans aucun doute possible."])
+    rt, _ = _routeur_equipe(tmp_path, c)
+    rep = rt.traiter("Que dit l'islam sur le commerce avec preuves")
+    assert "9999" not in rep and "8888" not in rep and "personne de science" in rep
+
+
+def test_question_sur_la_priere_n_est_pas_l_horaire(r):
+    r.cerveau.appeler = lambda *a, **k: "OUI" if a[0].startswith("Tu es le directeur") else "Une réponse claire et sourcée."
+    assert r.traiter("Que dit l'islam sur la prière ?") == "Une réponse claire et sourcée."
+    assert "Asr" in r.traiter("C'est quand Asr ?")
+
+
+def test_conseil_business_passe_par_l_equipe(tmp_path):
+    c = CerveauEquipe(avis=["OUI"])
+    rt, traces = _routeur_equipe(tmp_path, c)
+    rt.traiter("Comment trouver mes premiers clients ?")
+    assert traces[0] == "Directeur → Manager business"
+
+
+class FauxWeb:
+    def __init__(self, panne=False):
+        self.panne, self.urls = panne, []
+
+    def __call__(self, url, params=None, **k):
+        self.urls.append(url)
+        if self.panne:
+            raise ConnectionError
+        rep = _Rep()
+        if "alquran" in url:
+            n = int(url.split("/ayah/")[1].split("/")[0])
+            rep._js = {"data": {"text": f"Texte du verset {n}.", "numberInSurah": n, "surah": {"number": 1}}}
+        elif "opensearch" in str(params):
+            rep._js = ["x", [params["search"]], [], []]
+        else:
+            rep._js = {"type": "standard", "extract": f"Résumé de {url.rsplit('/', 1)[1]}."}
+        return rep
+
+
+def test_apprend_tout_seul_chaque_jour(tmp_path):
+    from nour.apprendre import Eleve
+    reglages = config.charger(tmp_path)
+    vus = []
+    e = Eleve(reglages, get=FauxWeb(), apres=vus.append)
+    appris = e.session()
+    assert appris == ["Coran 1:1", "Jeff Bezos", "David Ogilvy", "Ibn Khaldoun"]   # 1 verset + 3 leçons
+    assert vus == [appris]
+    assert e.session() == []                                    # pas deux fois le même jour
+    texte = "".join(f.read_text() for f in (tmp_path / "bibliotheque").glob("*.md"))
+    assert "Coran 1:1 (sens, traduction Hamidullah)" in texte and "Résumé de Jeff%20Bezos" in texte
+    # Nour s'en sert ensuite pour répondre
+    rt = Routeur(reglages, lambda t: None, cerveau=CerveauEquipe())
+    assert any(p["titre"] == "Ibn Khaldoun" and "Wikipédia" in p["texte"]
+               for p in rt.directeur.bibliotheque.chercher("Ibn Khaldoun"))
+
+
+def test_apprentissage_sans_internet_ne_saute_rien(tmp_path):
+    from nour.apprendre import Eleve
+    e = Eleve(config.charger(tmp_path), get=FauxWeb(panne=True))
+    assert e.session() == []
+    assert e.etat()["index"] == 0 and e.etat()["verset"] == 0
+
+
+def test_bibliotheque_perso_plafonnee(tmp_path):
+    from nour.apprendre import Eleve
+    reglages = config.charger(tmp_path)
+    reglages["bibliotheque_max_mo"] = 0.001                     # 1 000 octets
+    e = Eleve(reglages)
+    e.biblio.mkdir()
+    for mois in ("2026-01", "2026-02", "2026-03"):
+        (e.biblio / f"appris-business-{mois}.md").write_text("x" * 600)
+    e.ranger()
+    assert [f.name for f in e.biblio.glob("*.md")] == ["appris-business-2026-03.md"]
+
+
+def test_qu_as_tu_appris(r):
+    from nour.apprendre import Eleve
+    r.eleve = Eleve(r.r, get=FauxWeb())
+    rep = r.traiter("Qu'as-tu appris aujourd'hui ?")
+    assert "Coran 1:1" in rep and "Jeff Bezos" in rep
+    assert "Aujourd'hui j'ai appris" in r.traiter("salam")

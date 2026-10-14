@@ -124,6 +124,24 @@ def lancer(reglages, micro=True):
             bus.emettre("etat", etat="veille")
 
     threading.Thread(target=routeur.cerveau.prechauffer, daemon=True).start()
+
+    # Apprentissage quotidien, tout seul, quand Nour est libre (et vérifie les nouveautés de Claude sur GitHub)
+    from .apprendre import Eleve
+    from . import maj
+
+    def appris(titres):
+        routeur.recharger_bibliotheque()
+        bus.emettre("message", qui="equipe", texte="J'ai appris : " + ", ".join(titres))
+
+    def nouveautes():
+        if maj.verifier(reglages.get("depot_maj", "")) and not occupe():
+            bus.emettre("message", qui="equipe", texte="Nouvelles fiches reçues : je redémarre.")
+            os.execv(sys.executable, [sys.executable, "-m", "nour", *sys.argv[1:]])
+
+    occupe = lambda: parole["verrou"].locked() or verrou_demande.locked()
+    routeur.eleve = Eleve(reglages, apres=appris)
+    routeur.eleve.demarrer(occupe=occupe, aussi=nouveautes)
+
     if reglages.get("interface", True):
         url = demarrer(bus, routeur, traiter)
         print(f"Écran de {nom} : {url}", flush=True)

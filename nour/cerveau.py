@@ -69,7 +69,8 @@ class Cerveau:
     def _local(self, au_fil=None, systeme=None, messages=None, max_mots=200) -> str:
         r = requests.post(f"{OLLAMA}/api/chat", timeout=300, stream=True, json={
             "model": self.r["modele_local"], "stream": True, "keep_alive": "2h",
-            "options": {"num_predict": max_mots, "temperature": 0.6},
+            "options": {"num_predict": max_mots, "temperature": 0.6,
+                        "num_ctx": 4096 if systeme else 2048},   # place pour les fiches de la bibliothèque
             "messages": [{"role": "system", "content": systeme or self.consigne()}] + (messages or self.historique),
         })
         r.raise_for_status()

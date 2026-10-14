@@ -22,4 +22,6 @@ def agir(m, brut, ctx):
     n = len(ctx.carnet._lire())
     if n:
         morceaux.append(f"Tu as {n} note{'s' if n > 1 else ''} dans ton carnet.")
+    if getattr(ctx, "eleve", None) and (appris := ctx.eleve.appris_aujourdhui()):
+        morceaux.append("Aujourd'hui j'ai appris : " + ", ".join(appris) + ".")
     return " ".join(morceaux)

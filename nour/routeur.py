@@ -7,6 +7,7 @@ from . import competences, journal, outils, securite
 from .memoire import Memoire
 from .equipe import TACHE, Directeur
 from .cerveau import Cerveau
+from .bibliotheque import ICI as SAVOIR, Bibliotheque
 
 R_AIDE = re.compile(r"(qu'est-ce que tu sais faire|que sais-tu faire|tu sais faire quoi|^aide(?:-moi)?$)")
 
@@ -30,8 +31,16 @@ class Routeur:
         self.presse_papiers = None
         self.dernier = None         # (demande, réponse) : pour « c'est faux »
         self.suivi = None           # l'écran affiche le travail de l'équipe
-        self.directeur = Directeur(self.cerveau, lambda t: self.suivi and self.suivi(t))
+        self.eleve = None           # l'apprentissage quotidien (branché au lancement)
+        self.directeur = Directeur(self.cerveau, lambda t: self.suivi and self.suivi(t), self._bibliotheque())
         self.competences = competences.charger()
+
+    def _bibliotheque(self) -> Bibliotheque:
+        return Bibliotheque([SAVOIR, self.r["dossier"] / "bibliotheque"])
+
+    def recharger_bibliotheque(self) -> None:
+        """Après une leçon apprise : Nour s'en sert tout de suite."""
+        self.directeur.bibliotheque = self._bibliotheque()
 
     def journal(self, action: str, detail: str = "") -> None:
         journal.ecrire(self.r["dossier"], action, detail)
