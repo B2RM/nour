@@ -20,8 +20,10 @@ from urllib.parse import quote
 
 import requests
 
+from . import securite
+
 PROGRAMME = Path(__file__).with_name("savoir") / "programme.json"
-UA = {"User-Agent": "Nour/0.5 (assistant personnel ; github.com/B2RM/nour)"}
+UA = {"User-Agent": "Nour/0.6 (assistant personnel ; github.com/B2RM/nour)"}
 NB_VERSETS = 6236
 
 
@@ -75,6 +77,9 @@ class Eleve:
 
     # --- ranger ---
     def _ecrire(self, domaine: str, titre: str, texte: str, source: str) -> None:
+        if securite.sensible(texte) or securite.sensible(titre):
+            return                   # rien qui ressemble à un code ou une carte n'entre dans la bibliothèque
+        texte = texte.replace("\n## ", "\n").replace("\n# ", "\n")   # un texte appris ne peut pas créer de faux passage
         self.biblio.mkdir(parents=True, exist_ok=True)
         f = self.biblio / f"appris-{domaine}-{dt.date.today():%Y-%m}.md"
         if not f.exists():

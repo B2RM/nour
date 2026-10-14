@@ -5,6 +5,7 @@ import threading
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlparse
 
 PAGE = Path(__file__).with_name("interface.html")
 
@@ -58,7 +59,14 @@ def demarrer(bus: Bus, routeur, sur_demande, port: int = 8765) -> str:
             self.end_headers()
             self.wfile.write(corps)
 
+        def _hote_ok(self) -> bool:
+            """Protection contre les sites piégés (« DNS rebinding ») : seule l'adresse locale est acceptée."""
+            hote = self.headers.get("Host", "").split(":")[0]
+            return hote in ("127.0.0.1", "localhost")
+
         def do_GET(self):
+            if not self._hote_ok():
+                return self.send_error(403)
             if self.path == "/":
                 corps = PAGE.read_bytes().replace(b"{{NOM}}", routeur.r["nom"].encode())
                 self.send_response(200)
@@ -87,6 +95,10 @@ def demarrer(bus: Bus, routeur, sur_demande, port: int = 8765) -> str:
                 self._json([c.DESCRIPTION for c in routeur.competences])
             elif self.path == "/api/memoire":
                 self._json(routeur.memoire.faits())
+            elif self.path == "/api/sante":
+                from . import sante
+                controles = sante.bilan(routeur, getattr(routeur, "url_ecran", ""))
+                self._json({"controles": controles, "rapport": sante.rapport(controles)})
             elif self.path == "/api/erreurs":
                 f = routeur.r["dossier"] / "a-ameliorer.json"
                 self._json(json.loads(f.read_text(encoding="utf-8")) if f.exists() else [])
@@ -94,13 +106,15 @@ def demarrer(bus: Bus, routeur, sur_demande, port: int = 8765) -> str:
                 self.send_error(404)
 
         def do_POST(self):
-            if self.path != "/demande":
+            if self.path != "/demande" or not self._hote_ok():
                 return self.send_error(404)
             # protection : seul l'écran de Nour (même origine) peut envoyer des demandes
             origine = self.headers.get("Origin", "")
-            if origine and not origine.startswith(("http://127.0.0.1", "http://localhost")):
+            if origine and urlparse(origine).hostname not in ("127.0.0.1", "localhost"):   # pas « 127.0.0.1.piege.com »
                 return self.send_error(403)
             n = int(self.headers.get("Content-Length", 0))
+            if n > 20_000:                       # une demande, pas un roman : on refuse le reste
+                return self.send_error(413)
             texte = json.loads(self.rfile.read(n) or b"{}").get("texte", "").strip()
             if texte:
                 threading.Thread(target=sur_demande, args=(texte,), daemon=True).start()

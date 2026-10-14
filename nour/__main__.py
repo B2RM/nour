@@ -77,7 +77,7 @@ def main():
     lancer(reglages, micro=not a.ecran)
 
 
-VARIANTES_APPEL = {"nour": ["nour", "noor", "nur", "nours", "noure", "nourr"]}
+VARIANTES_APPEL = {"nour": ["nour", "noor", "nur", "nours", "noure", "nourr", "nhour", "noure", "nooor", "nouhr", "nourre"]}
 
 
 def lancer(reglages, micro=True):
@@ -108,11 +108,17 @@ def lancer(reglages, micro=True):
     verrou_demande = threading.Lock()
 
     def traiter(demande):
+        if verrou_demande.locked():          # jamais de silence : on dit qu'on a bien reçu
+            bus.emettre("message", qui="equipe", texte="Bien reçu, je finis la demande d'avant puis je fais celle-ci.")
         with verrou_demande:
             bus.emettre("message", qui="toi", texte=demande)
             bus.emettre("etat", etat="reflechit")
             dits = []
-            rep = routeur.traiter(demande, au_fil=lambda p: (dits.append(p), dire(p, bulle=False)))
+            try:
+                rep = routeur.traiter(demande, au_fil=lambda p: (dits.append(p), dire(p, bulle=False)))
+            except Exception as e:           # un souci ne doit jamais rendre Nour sourd ou muet
+                routeur.journal("erreur", f"traiter : {type(e).__name__} : {e}"[:300])
+                rep = "Désolé, j'ai eu un souci sur cette demande. Je l'ai noté. Tu peux réessayer."
             if dits:
                 bus.emettre("message", qui="nour", texte=rep)
             elif len(rep) > 350:          # long travail de l'équipe : on dit le début, le reste est à l'écran
@@ -122,8 +128,24 @@ def lancer(reglages, micro=True):
             else:
                 dire(rep)
             bus.emettre("etat", etat="veille")
+            fin_reponse[0] = time.time()
 
-    threading.Thread(target=routeur.cerveau.prechauffer, daemon=True).start()
+    fin_reponse = [0.0]
+    # l'équipe prévient tout de suite (on n'attend pas la fin du travail pour savoir qu'il a compris)
+    routeur.annonce = lambda t: threading.Thread(target=dire, args=(t,), kwargs={"bulle": False}, daemon=True).start()
+
+    def reveiller_cerveau():
+        if reglages.get("cerveau") != "claude" and not routeur.cerveau.ollama_pret():
+            bus.emettre("message", qui="equipe", texte="Ollama ne répond pas : ouvre l'application Ollama.")
+            return
+        routeur.cerveau.prechauffer()
+        if routeur.cerveau.vitesse:
+            bus.emettre("message", qui="equipe", texte=f"Cerveau prêt ({routeur.cerveau.vitesse} mots/s).")
+            if routeur.cerveau.vitesse < 8 and "3b" not in reglages.get("modele_local", ""):
+                bus.emettre("message", qui="equipe",
+                            texte="Mon cerveau est lent sur ce Mac. Pour des réponses au tac au tac, dis : « Nour, cerveau rapide ».")
+
+    threading.Thread(target=reveiller_cerveau, daemon=True).start()
 
     # Apprentissage quotidien, tout seul, quand Nour est libre (et vérifie les nouveautés de Claude sur GitHub)
     from .apprendre import Eleve
@@ -133,17 +155,28 @@ def lancer(reglages, micro=True):
         routeur.recharger_bibliotheque()
         bus.emettre("message", qui="equipe", texte="J'ai appris : " + ", ".join(titres))
 
+    from . import sante
+
+    def controle():
+        controles = sante.bilan(routeur, routeur.url_ecran)
+        routeur.journal("sante", " | ".join(c["titre"] for c in controles if not c["ok"]) or "tout va bien")
+        for a in sante.alertes(controles):
+            bus.emettre("message", qui="equipe", texte=f"⚠️ Sécurité : {a}")
+
     def nouveautes():
+        controle()
         if maj.verifier(reglages.get("depot_maj", "")) and not occupe():
             bus.emettre("message", qui="equipe", texte="Nouvelles fiches reçues : je redémarre.")
             os.execv(sys.executable, [sys.executable, "-m", "nour", *sys.argv[1:]])
 
+    routeur.url_ecran = ""
     occupe = lambda: parole["verrou"].locked() or verrou_demande.locked()
     routeur.eleve = Eleve(reglages, apres=appris)
     routeur.eleve.demarrer(occupe=occupe, aussi=nouveautes)
 
     if reglages.get("interface", True):
         url = demarrer(bus, routeur, traiter)
+        routeur.url_ecran = url
         print(f"Écran de {nom} : {url}", flush=True)
         webbrowser.open(url)
 
@@ -154,33 +187,66 @@ def lancer(reglages, micro=True):
 
     from .oreille import Oreille
     print("Chargement de l'oreille... (la première fois : téléchargement, quelques minutes)", flush=True)
-    oreille = Oreille(reglages.get("modele_oreille", "base"))
+    oreille = Oreille(reglages.get("modele_oreille", "base"), nom)
+    routeur.oreille = oreille
     print("Oreille prête. Le micro écoute.", flush=True)
-    appels = VARIANTES_APPEL.get(_sans_accents(nom), [_sans_accents(nom)])
-    motif_appel = re.compile(r"\b(" + "|".join(map(re.escape, appels)) + r")\b[\s,.!?]*", re.I)
+    motif_appel = motif_d_appel(nom)
     dire_seul("Salam Hilal, je suis prêt.")
     while True:
-        debut = time.time()
-        entendu = oreille.ecouter(quand_voix=lambda: bus.emettre("etat", etat="ecoute"))
-        if parole["verrou"].locked() or parole["fin"] > debut:
-            continue                    # c'était ma propre voix
-        simple = _sans_accents(entendu)
-        m = motif_appel.search(simple)
-        if not m:
-            bus.emettre("etat", etat="veille")
-            continue
-        demande = entendu[m.end():].strip(" ,.!?")   # même longueur : les accents ne décalent rien
-        if not demande:
-            dire("Oui ?", bulle=False)
-            bus.emettre("etat", etat="ecoute")
-            demande = oreille.ecouter().strip(" ,.!?")
-        if _sans_accents(demande).strip(" .!") in {"stop", "au revoir", "arrete-toi", "eteins-toi"}:
-            dire_seul("À bientôt, in sha Allah.")
+        try:
+            ecouter_une_fois(oreille, motif_appel, parole, bus, dire, dire_seul, traiter, fin_reponse,
+                             reglages.get("conversation_secondes", 8))
+        except StopIteration:
             break
-        if demande:
-            traiter(demande)
-        else:
+        except Exception as e:           # micro débranché, etc. : on note, on attend un peu, on réécoute
+            routeur.journal("erreur", f"oreille : {type(e).__name__} : {e}"[:300])
             bus.emettre("etat", etat="veille")
+            time.sleep(1)
+
+
+def motif_d_appel(nom: str):
+    appels = VARIANTES_APPEL.get(_sans_accents(nom), [_sans_accents(nom)])
+    return re.compile(r"\b(" + "|".join(map(re.escape, appels)) + r")\b[\s,.!?]*", re.I)
+
+
+def extraire_demande(entendu: str, motif_appel, en_conversation: bool) -> str | None:
+    """La demande dans ce qui a été entendu. None = pas pour Nour.
+    En conversation (juste après une réponse), pas besoin de redire « Nour »."""
+    m = motif_appel.search(_sans_accents(entendu))
+    if m:
+        return entendu[m.end():].strip(" ,.!?")    # même longueur : les accents ne décalent rien
+    if en_conversation and len(entendu.strip(" ,.!?")) > 2:
+        return entendu.strip(" ,.!?")
+    return None
+
+
+def ecouter_une_fois(oreille, motif_appel, parole, bus, dire, dire_seul, traiter, fin_reponse, conversation):
+    import time
+    en_conversation = time.time() - fin_reponse[0] < conversation
+    debut = time.time()
+    entendu = oreille.ecouter(quand_voix=lambda: bus.emettre("etat", etat="ecoute"),
+                              attente_max=(conversation if en_conversation else None))
+    if parole["verrou"].locked() or parole["fin"] > debut:
+        return                          # c'était ma propre voix
+    if not entendu:
+        bus.emettre("etat", etat="veille")
+        return
+    demande = extraire_demande(entendu, motif_appel, en_conversation)
+    if demande is None:
+        bus.emettre("message", qui="equipe", texte=f"(entendu sans « Nour » : {entendu[:80]})")
+        bus.emettre("etat", etat="veille")
+        return
+    if not demande:
+        dire("Oui ?", bulle=False)
+        bus.emettre("etat", etat="ecoute")
+        demande = oreille.ecouter(attente_max=8).strip(" ,.!?")
+    if _sans_accents(demande).strip(" .!") in {"stop", "au revoir", "arrete-toi", "eteins-toi"}:
+        dire_seul("À bientôt, in sha Allah.")
+        raise StopIteration
+    if demande:
+        traiter(demande)
+    else:
+        bus.emettre("etat", etat="veille")
 
 
 if __name__ == "__main__":

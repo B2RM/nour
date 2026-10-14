@@ -18,6 +18,8 @@ def verifier(depot: str, ici: Path = ICI, get=requests.get) -> str | None:
     """Renvoie un message si une mise à jour a été installée, None sinon. Ne plante jamais."""
     if not depot or (ici / ".git").exists():   # pas de mise à jour dans une copie de développement
         return None
+    if depot != "B2RM/nour":                   # sécurité : seul le dépôt officiel peut changer le code
+        return None
     try:
         r = get(f"https://api.github.com/repos/{depot}/commits/main", timeout=8,
                 headers={"Accept": "application/vnd.github+json"})
@@ -48,6 +50,8 @@ def verifier(depot: str, ici: Path = ICI, get=requests.get) -> str | None:
             subprocess.run([sys.executable, "-m", "pip", "install", "--user", "-q", "-r",
                             str(ici / "requirements.txt")])
         marque.write_text(sha)
+        from . import sante
+        sante.ecrire_empreintes(ici)           # photo du code officiel, pour détecter toute modification
         return "J'ai appris de nouvelles choses. Redémarrage."
     except Exception:
         return None

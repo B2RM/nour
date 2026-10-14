@@ -114,6 +114,7 @@
     <button data-vue="competences">Compétences</button>
     <button data-vue="memoire">Mémoire</button>
     <button data-vue="erreurs">Mes erreurs</button>
+    <button data-vue="sante">Santé</button>
   </div>
 </header>
 
@@ -208,6 +209,13 @@ async function ouvrir(vue) {
     p.textContent = "Ajoute : « souviens-toi que… ». Retire : « oublie… ». Tout reste sur ton Mac.";
     if (!d.length) ul.append(li("Rien pour l'instant."));
     d.slice().reverse().forEach(f => ul.append(li(f.fait, "depuis le " + f.depuis)));
+  } else if (vue === "sante") {
+    h.textContent = "Ma santé et ma sécurité";
+    p.textContent = "Je me contrôle tout seul au démarrage puis toutes les 3 heures. Si quelque chose ne va pas, copie ce bilan et envoie-le à Claude.";
+    const b = document.createElement("button"); b.className = "envoyer copier"; b.textContent = "Copier pour Claude";
+    b.onclick = async () => { await navigator.clipboard.writeText(d.rapport); b.textContent = "Copié ✓"; };
+    contenu.append(b);
+    d.controles.forEach(c => ul.append(li((c.ok ? "✓ " : "✗ ") + c.titre, c.detail)));
   } else {
     h.textContent = "Mes erreurs";
     p.textContent = "Quand je me trompe, dis « c'est faux ». Copie cette liste et envoie-la à Claude : il me corrige et je me mets à jour seul.";

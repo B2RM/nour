@@ -1,8 +1,16 @@
-# Nour — assistant vocal de Hilal (v0.5)
+# Nour — assistant vocal de Hilal (v0.6)
 
 Notre propre code. Plan et règles : ../plan.md
 
-## Ce qu'il sait faire (v0.5)
+## Ce qu'il sait faire (v0.6)
+- **Plus fiable, plus vif** : l'oreille règle seule son seuil sur le bruit de la pièce et reconnaît mieux « Nour » ;
+  mode conversation (8 s après une réponse, pas besoin de redire « Nour ») ; une erreur ne rend plus Nour sourd ;
+  l'équipe dit « Je m'en occupe » tout de suite ; Ollama gardé chargé 6 h avec des réglages fixes (plus de
+  rechargement caché) et ouvert tout seul s'il est fermé ; « cerveau rapide » / « cerveau normal ».
+- **Santé et sécurité** (nour/sante.py) : au démarrage puis toutes les 3 h, Nour vérifie son écran (local
+  seulement, protection DNS rebinding), son dossier privé, l'absence de secrets stockés, que son code n'a pas été
+  modifié hors mise à jour officielle (empreintes), que les mises à jour viennent seulement de B2RM/nour, et
+  teste ses compétences. Bouton « Santé » + « bilan de santé » à la voix.
 - **Expert grâce à une bibliothèque** (nour/savoir/) : leçons des grands entrepreneurs (Bezos, Walton, Buffett,
   Jobs…), marketing (Ogilvy, Schwartz, Godin, Cialdini honnête), commerce, gagner sa vie halal, et
   **preuves religieuses** (Coran et hadiths avec références exactes). Le manager religion ne cite que des
@@ -28,7 +36,7 @@ Notre propre code. Plan et règles : ../plan.md
     python -m nour --texte     (Terminal)
 
 ## Tests
-    python -m pytest tests     (54 tests, OK le 14/10/2026)
+    python -m pytest tests     (65 tests, OK le 14/10/2026)
 
 ## Installation sur le PC
 Windows : double-clic sur `installer-windows.bat` (Python, Ollama, modules, cerveau, raccourci « Nour » sur le bureau). Mac : double-clic sur `installer-mac.command` (Python requis, installe Ollama, modules, cerveau, raccourci « Nour » sur le bureau). Voix : `say` (Thomas, française).

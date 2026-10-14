@@ -171,10 +171,10 @@ def test_mise_a_jour_installe_puis_ne_refait_rien(tmp_path):
         appels.append(url)
         return _Rep({"sha": "s1"}) if "api.github.com" in url else _Rep(content=_zip_depot("v2"))
 
-    assert maj.verifier("hilal/nour", tmp_path, get) is not None
+    assert maj.verifier("B2RM/nour", tmp_path, get) is not None
     assert (tmp_path / "nour" / "competences" / "nouvelle.py").exists()
     assert not (tmp_path / "nour" / "vieux.py").exists()
-    assert maj.verifier("hilal/nour", tmp_path, get) is None   # déjà à jour
+    assert maj.verifier("B2RM/nour", tmp_path, get) is None   # déjà à jour
     assert sum("codeload" in u for u in appels) == 1
 
 
@@ -184,7 +184,7 @@ def test_mise_a_jour_sans_depot_ou_hors_ligne(tmp_path):
 
     def get(url, **k):
         raise OSError("pas d'internet")
-    assert maj.verifier("hilal/nour", tmp_path, get) is None
+    assert maj.verifier("B2RM/nour", tmp_path, get) is None
 
 
 def test_memoire_retient_et_va_au_cerveau(r):
@@ -499,3 +499,129 @@ def test_qu_as_tu_appris(r):
     rep = r.traiter("Qu'as-tu appris aujourd'hui ?")
     assert "Coran 1:1" in rep and "Jeff Bezos" in rep
     assert "Aujourd'hui j'ai appris" in r.traiter("salam")
+
+
+# --- v0.6 : oreille, réactivité, sécurité, santé ---
+
+def test_mise_a_jour_refuse_un_autre_depot(tmp_path):
+    from nour import maj
+    assert maj.verifier("pirate/nour", tmp_path, get=lambda *a, **k: 1 / 0) is None
+
+
+def test_mise_a_jour_prend_la_photo_du_code(tmp_path):
+    from nour import maj, sante
+    (tmp_path / "requirements.txt").write_text("requests\n")
+    get = lambda url, **k: _Rep({"sha": "s1"}) if "api.github.com" in url else _Rep(content=_zip_depot("v2"))
+    maj.verifier("B2RM/nour", tmp_path, get)
+    assert sante.code_modifie(tmp_path) == []
+    (tmp_path / "nour" / "__main__.py").write_text("print('piège')")
+    assert sante.code_modifie(tmp_path) == ["nour/__main__.py"]
+
+
+def test_seuil_de_voix_s_adapte():
+    from nour.oreille import seuil_pour
+    assert seuil_pour(0.001) == 0.004          # pièce calme : entend même une voix douce
+    assert seuil_pour(0.005) == 0.015          # un peu de bruit : seuil au-dessus du bruit
+    assert seuil_pour(0.5) == 0.03             # jamais sourd
+
+
+def test_mot_d_appel_et_mode_conversation():
+    from nour.__main__ import extraire_demande, motif_d_appel
+    m = motif_d_appel("Nour")
+    assert extraire_demande("Noor, quelle heure est-il ?", m, False) == "quelle heure est-il"
+    assert extraire_demande("Dis-moi la météo", m, False) is None           # pas appelé
+    assert extraire_demande("Et demain ?", m, True) == "Et demain"          # juste après une réponse
+    assert extraire_demande("Nour", m, False) == ""                          # « Oui ? »
+
+
+def test_cerveau_toujours_les_memes_reglages(tmp_path, monkeypatch):
+    """Changer la taille de contexte forçait Ollama à tout recharger : plus jamais."""
+    from nour import cerveau as cv
+    envoyes = []
+
+    class Rep:
+        def json(self):
+            return {"eval_count": 30, "eval_duration": 2e9}
+
+        def raise_for_status(self):
+            pass
+
+        def iter_lines(self):
+            yield b'{"message": {"content": "Salut."}, "done": true}'
+
+    monkeypatch.setattr(cv.requests, "post", lambda url, json=None, **k: (envoyes.append(json), Rep())[1])
+    c = cv.Cerveau(config.charger(tmp_path))
+    c.prechauffer()
+    c.repondre("bonjour")
+    c.appeler("Tu es le manager.", [{"role": "user", "content": "x"}], max_mots=300)
+    tailles = {e["options"]["num_ctx"] for e in envoyes}
+    assert tailles == {4096} and {e["keep_alive"] for e in envoyes} == {"6h"}
+    assert c.vitesse == 15.0
+
+
+def test_l_equipe_previent_tout_de_suite(tmp_path):
+    c = CerveauEquipe(avis=["OUI"])
+    rt, _ = _routeur_equipe(tmp_path, c)
+    annonces = []
+    rt.annonce = annonces.append
+    rt.traiter("Écris un message pour remercier un client")
+    assert annonces == ["Je m'en occupe."]
+
+
+def test_bilan_de_sante(r):
+    from nour import sante
+    controles = sante.bilan(r, "http://127.0.0.1:8765/")
+    assert all(c["ok"] for c in controles), sante.rapport(controles)
+    assert "Tout va bien" in r.traiter("bilan de santé")
+    # un secret glissé dans la bibliothèque est repéré (sans le répéter)
+    (r.r["dossier"] / "bibliotheque").mkdir(exist_ok=True)
+    (r.r["dossier"] / "bibliotheque" / "x.md").write_text("mot de passe : 1234")
+    alertes = sante.alertes(sante.bilan(r, "http://127.0.0.1:8765/"))
+    assert alertes and "1234" not in alertes[0]
+
+
+def test_dossier_rendu_prive(tmp_path):
+    import os
+    import stat
+    from nour import sante
+    (tmp_path / "memoire.json").write_text("[]")
+    os.chmod(tmp_path / "memoire.json", 0o644)
+    assert sante.proteger_dossier(tmp_path) >= 1
+    assert stat.S_IMODE((tmp_path / "memoire.json").stat().st_mode) == 0o600
+
+
+def test_autotests_des_competences():
+    from nour import competences, sante
+    assert sante.autotests(competences.charger()) == []
+
+
+def test_ecran_refuse_les_sites_pieges(r):
+    import http.client
+    from nour.interface import Bus, demarrer
+    recu = []
+    url = demarrer(Bus(), r, recu.append, port=8790)
+    port = int(url.rsplit(":", 1)[1].strip("/"))
+
+    def appel(methode, chemin, entetes, corps=None):
+        c = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        c.request(methode, chemin, body=corps, headers=entetes)
+        return c.getresponse().status
+
+    assert appel("GET", "/api/memoire", {"Host": f"127.0.0.1:{port}"}) == 200
+    assert appel("GET", "/api/memoire", {"Host": "piege.com"}) == 403              # DNS rebinding
+    corps = '{"texte": "ouvre youtube"}'
+    assert appel("POST", "/demande", {"Host": f"127.0.0.1:{port}", "Origin": "http://127.0.0.1.piege.com",
+                                      "Content-Type": "application/json"}, corps) == 403
+    assert appel("POST", "/demande", {"Host": f"127.0.0.1:{port}", "Origin": f"http://127.0.0.1:{port}",
+                                      "Content-Type": "application/json"}, corps) == 200
+    time.sleep(0.2)
+    assert recu == ["ouvre youtube"]
+
+
+def test_apprentissage_filtre_les_secrets(tmp_path):
+    from nour.apprendre import Eleve
+    e = Eleve(config.charger(tmp_path))
+    e._ecrire("business", "Piège", "Ton mot de passe est 1234", "Wikipédia")
+    e._ecrire("business", "Vrai", "Texte normal\n## Faux passage", "Wikipédia")
+    texte = "".join(f.read_text() for f in e.biblio.glob("*.md"))
+    assert "1234" not in texte and "## Faux passage" not in texte and "## Vrai" in texte

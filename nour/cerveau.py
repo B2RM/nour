@@ -5,6 +5,7 @@ import datetime as dt
 import json
 import os
 import re
+import time
 
 import requests
 
@@ -17,6 +18,10 @@ CONSIGNE = (
     "conseille de demander à une personne de science.{memoire}"
 )
 OLLAMA = "http://localhost:11434"
+# Toujours les MÊMES réglages : si la taille de contexte change d'un appel à l'autre, Ollama recharge
+# tout le modèle (plusieurs secondes perdues à chaque fois : c'était une cause de lenteur).
+OPTIONS = {"num_ctx": 4096, "temperature": 0.6}
+GARDER = "6h"                 # le cerveau reste chargé 6 h : pas d'attente au réveil
 _FIN_PHRASE = re.compile(r"(.+?[.!?…])(\s+|$)", re.S)
 
 
@@ -25,18 +30,43 @@ class Cerveau:
         self.r = reglages
         self.memoire = memoire
         self.historique: list[dict] = []
+        self.vitesse = None         # mots (jetons) par seconde, mesuré au démarrage
 
     def consigne(self) -> str:
         mem = self.memoire.pour_le_cerveau() if self.memoire else ""
         return CONSIGNE.format(nom=self.r["nom"], date=f"{dt.date.today():%d/%m/%Y}", memoire=mem)
 
+    def ollama_pret(self, lancer=None, attente=25) -> bool:
+        """Ollama répond-il ? Sinon on l'ouvre (l'application est déjà installée) et on attend un peu."""
+        def ok():
+            try:
+                return requests.get(f"{OLLAMA}/api/tags", timeout=2).ok
+            except Exception:
+                return False
+        if ok():
+            return True
+        try:
+            (lancer or (lambda: __import__("subprocess").Popen(["open", "-a", "Ollama"])))()
+        except Exception:
+            return False
+        for _ in range(attente):
+            time.sleep(1)
+            if ok():
+                return True
+        return False
+
     def prechauffer(self) -> None:
-        """Charge le modèle à l'avance pour que la première réponse soit rapide."""
+        """Charge le modèle à l'avance (mêmes réglages que les vraies questions) et mesure sa vitesse."""
         if self.r["cerveau"] == "claude":
             return
         try:
-            requests.post(f"{OLLAMA}/api/generate", timeout=180,
-                          json={"model": self.r["modele_local"], "prompt": "", "keep_alive": "2h"})
+            r = requests.post(f"{OLLAMA}/api/chat", timeout=180, json={
+                "model": self.r["modele_local"], "stream": False, "keep_alive": GARDER,
+                "options": {**OPTIONS, "num_predict": 12},
+                "messages": [{"role": "user", "content": "Dis bonjour en trois mots."}]})
+            d = r.json()
+            if d.get("eval_duration"):
+                self.vitesse = round(d["eval_count"] / (d["eval_duration"] / 1e9), 1)
         except Exception:
             pass
 
@@ -67,10 +97,9 @@ class Cerveau:
         return self._local(au_fil, systeme, messages, max_mots)
 
     def _local(self, au_fil=None, systeme=None, messages=None, max_mots=200) -> str:
-        r = requests.post(f"{OLLAMA}/api/chat", timeout=300, stream=True, json={
-            "model": self.r["modele_local"], "stream": True, "keep_alive": "2h",
-            "options": {"num_predict": max_mots, "temperature": 0.6,
-                        "num_ctx": 4096 if systeme else 2048},   # place pour les fiches de la bibliothèque
+        r = requests.post(f"{OLLAMA}/api/chat", timeout=(5, 90), stream=True, json={
+            "model": self.r["modele_local"], "stream": True, "keep_alive": GARDER,
+            "options": {**OPTIONS, "num_predict": max_mots},
             "messages": [{"role": "system", "content": systeme or self.consigne()}] + (messages or self.historique),
         })
         r.raise_for_status()

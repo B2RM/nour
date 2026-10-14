@@ -31,6 +31,9 @@ class Routeur:
         self.presse_papiers = None
         self.dernier = None         # (demande, réponse) : pour « c'est faux »
         self.suivi = None           # l'écran affiche le travail de l'équipe
+        self.annonce = None         # dire tout de suite « je m'en occupe » (écran + voix)
+        self.url_ecran = ""
+        self.oreille = None         # pour le bilan de santé
         self.eleve = None           # l'apprentissage quotidien (branché au lancement)
         self.directeur = Directeur(self.cerveau, lambda t: self.suivi and self.suivi(t), self._bibliotheque())
         self.competences = competences.charger()
@@ -77,6 +80,8 @@ class Routeur:
                     return rep
         if TACHE.match(t) and hasattr(self.cerveau, "appeler"):
             self.journal("equipe", brut)
+            if self.annonce:
+                self.annonce("Je m'en occupe.")
             return self.directeur.traiter(brut)
         if au_fil:
             return self.cerveau.repondre(brut, au_fil)

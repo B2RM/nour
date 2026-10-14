@@ -179,7 +179,7 @@ class Directeur:
             messages += [{"role": "assistant", "content": precedent or ""},
                          {"role": "user", "content": f"Le directeur refuse ce travail : {remarque}. "
                                                      "Refais-le en corrigeant uniquement ce point."}]
-        return self.cerveau.appeler(systeme, messages, max_mots=450).strip()
+        return self.cerveau.appeler(systeme, messages, max_mots=320).strip()
 
     def _verifier(self, demande: str, travail: str, sources: str = "") -> str | None:
         raison = controle_gratuit(travail, sources)
@@ -188,8 +188,8 @@ class Directeur:
         avis = self.cerveau.appeler(
             "Tu es le directeur. Tu vérifies le travail d'un manager. Réponds uniquement « OUI » s'il répond "
             "correctement à la demande, sinon « NON : » suivi de la raison en 12 mots maximum.",
-            [{"role": "user", "content": f"Demande : {demande}\n\nTravail rendu :\n{travail[:2500]}"}],
-            max_mots=25).strip()
+            [{"role": "user", "content": f"Demande : {demande}\n\nTravail rendu :\n{travail[:1500]}"}],
+            max_mots=16).strip()
         if _simple(avis).startswith("non"):
             return avis.split(":", 1)[-1].strip() or "la réponse ne répond pas à la demande"
         return None
