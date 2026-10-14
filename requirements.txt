@@ -1,0 +1,5 @@
+requests
+numpy
+sounddevice
+faster-whisper
+pyttsx3; sys_platform == "win32"
