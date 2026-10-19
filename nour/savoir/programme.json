@@ -406,5 +406,25 @@
 {
 "domaine": "histoire",
 "sujet": "Abbassides"
+},
+{
+"domaine": "business",
+"sujet": "Logistique"
+},
+{
+"domaine": "business",
+"sujet": "Juste-à-temps"
+},
+{
+"domaine": "business",
+"sujet": "Kaizen"
+},
+{
+"domaine": "business",
+"sujet": "Taiichi Ohno"
+},
+{
+"domaine": "histoire",
+"sujet": "Fondouk"
 }
 ]
