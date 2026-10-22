@@ -462,5 +462,25 @@
 {
 "domaine": "histoire",
 "sujet": "Avicenne"
+},
+{
+"domaine": "business",
+"sujet": "Prix de revient"
+},
+{
+"domaine": "business",
+"sujet": "Compte de résultat"
+},
+{
+"domaine": "business",
+"sujet": "Besoin en fonds de roulement"
+},
+{
+"domaine": "histoire",
+"sujet": "Luca Pacioli"
+},
+{
+"domaine": "histoire",
+"sujet": "Leonardo Fibonacci"
 }
 ]
