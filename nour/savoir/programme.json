@@ -482,5 +482,25 @@
 {
 "domaine": "histoire",
 "sujet": "Leonardo Fibonacci"
+},
+{
+"domaine": "business",
+"sujet": "Gestion du temps"
+},
+{
+"domaine": "business",
+"sujet": "Matrice d'Eisenhower"
+},
+{
+"domaine": "business",
+"sujet": "Procrastination"
+},
+{
+"domaine": "business",
+"sujet": "Loi de Parkinson"
+},
+{
+"domaine": "business",
+"sujet": "Technique Pomodoro"
 }
 ]
