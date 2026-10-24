@@ -502,5 +502,21 @@
 {
 "domaine": "business",
 "sujet": "Technique Pomodoro"
+},
+{
+"domaine": "marketing",
+"sujet": "Étude de marché"
+},
+{
+"domaine": "marketing",
+"sujet": "Entretien semi-directif"
+},
+{
+"domaine": "business",
+"sujet": "Clayton Christensen"
+},
+{
+"domaine": "marketing",
+"sujet": "Questionnaire"
 }
 ]
