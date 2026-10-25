@@ -518,5 +518,21 @@
 {
 "domaine": "marketing",
 "sujet": "Questionnaire"
+},
+{
+"domaine": "business",
+"sujet": "Eric Ries"
+},
+{
+"domaine": "histoire",
+"sujet": "Zappos"
+},
+{
+"domaine": "business",
+"sujet": "Étude de faisabilité"
+},
+{
+"domaine": "business",
+"sujet": "Prototype"
 }
 ]
