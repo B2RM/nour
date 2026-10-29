@@ -586,5 +586,21 @@
 {
 "domaine": "histoire",
 "sujet": "Marchandage"
+},
+{
+"domaine": "marketing",
+"sujet": "Effet de leurre"
+},
+{
+"domaine": "marketing",
+"sujet": "Effet d'ancrage"
+},
+{
+"domaine": "business",
+"sujet": "Aversion à la perte"
+},
+{
+"domaine": "business",
+"sujet": "Économie comportementale"
 }
 ]
