@@ -602,5 +602,21 @@
 {
 "domaine": "business",
 "sujet": "Économie comportementale"
+},
+{
+"domaine": "business",
+"sujet": "Service après-vente"
+},
+{
+"domaine": "marketing",
+"sujet": "Net Promoter Score"
+},
+{
+"domaine": "histoire",
+"sujet": "Tony Hsieh"
+},
+{
+"domaine": "business",
+"sujet": "Médiation de la consommation"
 }
 ]
