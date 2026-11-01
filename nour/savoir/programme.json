@@ -634,5 +634,21 @@
 {
 "domaine": "histoire",
 "sujet": "Tombouctou"
+},
+{
+"domaine": "marketing",
+"sujet": "Buzz marketing"
+},
+{
+"domaine": "business",
+"sujet": "Dropbox"
+},
+{
+"domaine": "histoire",
+"sujet": "PayPal"
+},
+{
+"domaine": "business",
+"sujet": "Système de Ponzi"
 }
 ]
