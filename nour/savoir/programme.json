@@ -670,5 +670,29 @@
 {
 "domaine": "histoire",
 "sujet": "Atul Gawande"
+},
+{
+"domaine": "business",
+"sujet": "Reconnaissance de dette"
+},
+{
+"domaine": "business",
+"sujet": "Délai de paiement"
+},
+{
+"domaine": "business",
+"sujet": "Affacturage"
+},
+{
+"domaine": "histoire",
+"sujet": "Lettre de change"
+},
+{
+"domaine": "business",
+"sujet": "Acompte"
+},
+{
+"domaine": "marketing",
+"sujet": "Paiement fractionné"
 }
 ]
