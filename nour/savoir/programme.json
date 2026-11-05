@@ -710,5 +710,25 @@
 {
 "domaine": "marketing",
 "sujet": "Psychologie des couleurs"
+},
+{
+"domaine": "business",
+"sujet": "Coût d'opportunité"
+},
+{
+"domaine": "business",
+"sujet": "Biais de confirmation"
+},
+{
+"domaine": "business",
+"sujet": "Théorie de la décision"
+},
+{
+"domaine": "histoire",
+"sujet": "Daniel Kahneman"
+},
+{
+"domaine": "business",
+"sujet": "Rasoir d'Ockham"
 }
 ]
