@@ -770,5 +770,25 @@
 {
 "domaine": "histoire",
 "sujet": "Jacques Cœur"
+},
+{
+"domaine": "marketing",
+"sujet": "Abandon de panier"
+},
+{
+"domaine": "marketing",
+"sujet": "Foire aux questions"
+},
+{
+"domaine": "marketing",
+"sujet": "Expérience utilisateur"
+},
+{
+"domaine": "marketing",
+"sujet": "Ergonomie web"
+},
+{
+"domaine": "business",
+"sujet": "Code de la consommation"
 }
 ]
