@@ -854,5 +854,25 @@
 {
 "domaine": "histoire",
 "sujet": "Bazar"
+},
+{
+"domaine": "business",
+"sujet": "Kickstarter"
+},
+{
+"domaine": "business",
+"sujet": "Financement participatif"
+},
+{
+"domaine": "marketing",
+"sujet": "Everett Rogers"
+},
+{
+"domaine": "marketing",
+"sujet": "Black Friday"
+},
+{
+"domaine": "histoire",
+"sujet": "Marché de Noël"
 }
 ]
