@@ -874,5 +874,21 @@
 {
 "domaine": "histoire",
 "sujet": "Marché de Noël"
+},
+{
+"domaine": "marketing",
+"sujet": "Télé-achat"
+},
+{
+"domaine": "business",
+"sujet": "QVC"
+},
+{
+"domaine": "marketing",
+"sujet": "Twitch"
+},
+{
+"domaine": "marketing",
+"sujet": "Streaming"
 }
 ]
