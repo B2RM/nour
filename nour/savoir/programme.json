@@ -890,5 +890,21 @@
 {
 "domaine": "marketing",
 "sujet": "Streaming"
+},
+{
+"domaine": "business",
+"sujet": "Halal"
+},
+{
+"domaine": "histoire",
+"sujet": "Économie islamique"
+},
+{
+"domaine": "business",
+"sujet": "Traçabilité"
+},
+{
+"domaine": "business",
+"sujet": "Commerce de détail"
 }
 ]
