@@ -946,5 +946,21 @@
 {
 "domaine": "histoire",
 "sujet": "Grand bazar d'Istanbul"
+},
+{
+"domaine": "marketing",
+"sujet": "Économie de l'attention"
+},
+{
+"domaine": "marketing",
+"sujet": "Système de recommandation"
+},
+{
+"domaine": "business",
+"sujet": "Herbert Simon"
+},
+{
+"domaine": "histoire",
+"sujet": "Ibn al-Haytham"
 }
 ]
