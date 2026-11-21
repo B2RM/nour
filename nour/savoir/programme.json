@@ -998,5 +998,21 @@
 {
 "domaine": "marketing",
 "sujet": "Marché de niche"
+},
+{
+"domaine": "business",
+"sujet": "Monopole"
+},
+{
+"domaine": "business",
+"sujet": "Revente à perte"
+},
+{
+"domaine": "marketing",
+"sujet": "Élasticité-prix de la demande"
+},
+{
+"domaine": "business",
+"sujet": "Oligopole"
 }
 ]
