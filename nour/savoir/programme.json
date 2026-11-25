@@ -1070,5 +1070,25 @@
 {
 "domaine": "histoire",
 "sujet": "Fatima al-Fihri"
+},
+{
+"domaine": "business",
+"sujet": "Hameçonnage"
+},
+{
+"domaine": "business",
+"sujet": "Ingénierie sociale (sécurité de l'information)"
+},
+{
+"domaine": "business",
+"sujet": "Kevin Mitnick"
+},
+{
+"domaine": "business",
+"sujet": "Andrew Grove"
+},
+{
+"domaine": "business",
+"sujet": "Authentification multifacteur"
 }
 ]
