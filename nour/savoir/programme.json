@@ -1090,5 +1090,25 @@
 {
 "domaine": "business",
 "sujet": "Authentification multifacteur"
+},
+{
+"domaine": "marketing",
+"sujet": "Google Analytics"
+},
+{
+"domaine": "marketing",
+"sujet": "Taux de rebond"
+},
+{
+"domaine": "business",
+"sujet": "Loi de Goodhart"
+},
+{
+"domaine": "business",
+"sujet": "William Edwards Deming"
+},
+{
+"domaine": "histoire",
+"sujet": "Florence Nightingale"
 }
 ]
