@@ -1126,5 +1126,21 @@
 {
 "domaine": "histoire",
 "sujet": "Zheng He"
+},
+{
+"domaine": "business",
+"sujet": "Gestion des risques"
+},
+{
+"domaine": "business",
+"sujet": "Nassim Nicholas Taleb"
+},
+{
+"domaine": "business",
+"sujet": "Sauvegarde (informatique)"
+},
+{
+"domaine": "histoire",
+"sujet": "Intel"
 }
 ]
